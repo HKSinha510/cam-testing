@@ -40,7 +40,7 @@ def upload():
         app.logger.debug(f"Received image of size: {len(image)} bytes")
 
         # Write the image to FFmpeg's stdin
-        ffmpeg_process.stdin.write(image)
+        ffmpeg_process.stdin.write(str(image))
         ffmpeg_process.stdin.flush()
 
         # Log FFmpeg output and errors
