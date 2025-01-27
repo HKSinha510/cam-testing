@@ -23,13 +23,12 @@ ffmpeg_command = [
     youtube_rtmp_url     # YouTube RTMP URL
 ]
 
-# Start FFmpeg process with logging
+# Start FFmpeg process with binary stdin
 ffmpeg_process = subprocess.Popen(
     ffmpeg_command,
-    stdin=subprocess.PIPE,
+    stdin=subprocess.PIPE,  # Binary input
     stdout=subprocess.PIPE,
-    stderr=subprocess.PIPE,
-    text=True
+    stderr=subprocess.PIPE
 )
 
 @app.route('/upload', methods=['POST'])
@@ -39,14 +38,14 @@ def upload():
         image = request.data
         app.logger.debug(f"Received image of size: {len(image)} bytes")
 
-        # Write the image to FFmpeg's stdin
-        ffmpeg_process.stdin.write(str(image))
+        # Write the binary image data to FFmpeg's stdin
+        ffmpeg_process.stdin.write(image)
         ffmpeg_process.stdin.flush()
 
         # Log FFmpeg output and errors
         stdout, stderr = ffmpeg_process.communicate(timeout=5)
-        app.logger.debug("FFmpeg stdout: " + stdout)
-        app.logger.debug("FFmpeg stderr: " + stderr)
+        app.logger.debug("FFmpeg stdout: " + stdout.decode())
+        app.logger.debug("FFmpeg stderr: " + stderr.decode())
 
         return "Image received and streamed!", 200
     except Exception as e:
