@@ -1,7 +1,11 @@
 from flask import Flask, request, Response
 import subprocess
+import logging
 
 app = Flask(__name__)
+
+# Enable detailed logging
+logging.basicConfig(level=logging.DEBUG)
 
 # YouTube RTMP URL (replace with your stream key)
 youtube_rtmp_url = "rtmp://a.rtmp.youtube.com/live2/6t3p-vkv2-m8fm-m9gp-brab"
@@ -33,18 +37,20 @@ def upload():
     try:
         # Get the image from the request
         image = request.data
+        app.logger.debug(f"Received image of size: {len(image)} bytes")
 
         # Write the image to FFmpeg's stdin
         ffmpeg_process.stdin.write(image)
         ffmpeg_process.stdin.flush()
 
         # Log FFmpeg output and errors
-        stdout, stderr = ffmpeg_process.communicate()
-        print("FFmpeg stdout:", stdout)
-        print("FFmpeg stderr:", stderr)
+        stdout, stderr = ffmpeg_process.communicate(timeout=5)
+        app.logger.debug("FFmpeg stdout: " + stdout)
+        app.logger.debug("FFmpeg stderr: " + stderr)
 
         return "Image received and streamed!", 200
     except Exception as e:
+        app.logger.error(f"Error: {str(e)}")
         return f"Error: {str(e)}", 500
 
 if __name__ == '__main__':
