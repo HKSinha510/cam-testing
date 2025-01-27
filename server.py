@@ -1,6 +1,5 @@
 from flask import Flask, request, Response
 import subprocess
-import os
 
 app = Flask(__name__)
 
@@ -11,7 +10,7 @@ youtube_rtmp_url = "rtmp://a.rtmp.youtube.com/live2/6t3p-vkv2-m8fm-m9gp-brab"
 ffmpeg_command = [
     'ffmpeg',
     '-f', 'image2pipe',  # Input format (images piped from stdin)
-    '-r', '1',           # Frame rate (1 frame per second)
+    '-r', '5',           # Frame rate (5 frames per second)
     '-i', '-',           # Input from stdin
     '-c:v', 'libx264',   # Video codec
     '-preset', 'fast',   # Encoding speed
@@ -20,8 +19,14 @@ ffmpeg_command = [
     youtube_rtmp_url     # YouTube RTMP URL
 ]
 
-# Start FFmpeg process
-ffmpeg_process = subprocess.Popen(ffmpeg_command, stdin=subprocess.PIPE)
+# Start FFmpeg process with logging
+ffmpeg_process = subprocess.Popen(
+    ffmpeg_command,
+    stdin=subprocess.PIPE,
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+    text=True
+)
 
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -32,6 +37,11 @@ def upload():
         # Write the image to FFmpeg's stdin
         ffmpeg_process.stdin.write(image)
         ffmpeg_process.stdin.flush()
+
+        # Log FFmpeg output and errors
+        stdout, stderr = ffmpeg_process.communicate()
+        print("FFmpeg stdout:", stdout)
+        print("FFmpeg stderr:", stderr)
 
         return "Image received and streamed!", 200
     except Exception as e:
