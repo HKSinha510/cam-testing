@@ -10,7 +10,7 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.DEBUG)
 
 # YouTube RTMP URL (replace with your stream key)
-youtube_rtmp_url = "rtmp://a.rtmp.youtube.com/live2/6t3p-vkv2-m8fm-m9gp-brab"
+youtube_rtmp_url = "rtmp://a.rtmp.youtube.com/live2/YOUR_STREAM_KEY"
 
 # FFmpeg command to stream to YouTube
 ffmpeg_command = [
