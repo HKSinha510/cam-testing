@@ -1,6 +1,7 @@
 from flask import Flask, request, Response
 import subprocess
 import logging
+from threading import Lock
 
 app = Flask(__name__)
 
@@ -31,6 +32,9 @@ ffmpeg_process = subprocess.Popen(
     stderr=subprocess.PIPE
 )
 
+# Lock to ensure thread-safe writes to FFmpeg's stdin
+ffmpeg_lock = Lock()
+
 @app.route('/upload', methods=['POST'])
 def upload():
     try:
@@ -39,13 +43,9 @@ def upload():
         app.logger.debug(f"Received image of size: {len(image)} bytes")
 
         # Write the binary image data to FFmpeg's stdin
-        ffmpeg_process.stdin.write(image)
-        ffmpeg_process.stdin.flush()
-
-        # Log FFmpeg output and errors
-        stdout, stderr = ffmpeg_process.communicate(timeout=5)
-        app.logger.debug("FFmpeg stdout: " + stdout.decode())
-        app.logger.debug("FFmpeg stderr: " + stderr.decode())
+        with ffmpeg_lock:
+            ffmpeg_process.stdin.write(image)
+            ffmpeg_process.stdin.flush()
 
         return "Image received and streamed!", 200
     except Exception as e:
