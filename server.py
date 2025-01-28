@@ -1,7 +1,8 @@
 from flask import Flask, request, Response
 import subprocess
 import logging
-from threading import Lock
+from threading import Lock, Thread
+import time
 
 app = Flask(__name__)
 
@@ -34,6 +35,25 @@ ffmpeg_process = subprocess.Popen(
 
 # Lock to ensure thread-safe writes to FFmpeg's stdin
 ffmpeg_lock = Lock()
+
+# Function to log FFmpeg output
+def log_ffmpeg_output():
+    while True:
+        stdout = ffmpeg_process.stdout.readline()
+        stderr = ffmpeg_process.stderr.readline()
+        if stdout:
+            app.logger.debug("FFmpeg stdout: " + stdout.decode().strip())
+        if stderr:
+            app.logger.error("FFmpeg stderr: " + stderr.decode().strip())
+        if ffmpeg_process.poll() is not None:
+            app.logger.error("FFmpeg process has terminated")
+            break
+        time.sleep(0.1)
+
+# Start a thread to log FFmpeg output
+ffmpeg_log_thread = Thread(target=log_ffmpeg_output)
+ffmpeg_log_thread.daemon = True
+ffmpeg_log_thread.start()
 
 @app.route('/upload', methods=['POST'])
 def upload():
